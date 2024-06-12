@@ -1,27 +1,25 @@
 from django.shortcuts import render, redirect
 from . import forms
-from django.contrib.auth.models import User
 
 def login(request):
-    return render(request, 'login.html.jinja')
+    return render(request,'login.html.jinja')
 
 def logout(request):
-    return render(request, 'logout.html.jinja')
+    return render(request,'logout.html.jinja')
 
 def register(request):
     if request.method == 'POST':
-        user_form = forms.RegistrationForm(request.POST)
-        address_formset = forms.UserAddressFormSet(request.POST)
-        if user_form.is_valid() and address_formset.is_valid():
-            user = user_form.save()
-            addresses = address_formset.save(commit=False)
+        form_user = forms.RegistrationForm(request.POST)
+        form_address = forms.UserAddressFormSet(request.POST)
+        if form_user.is_valid() and form_address.is_valid():
+            user = form_user.save()
+            addresses = form_address.save(commit=False)
             for address in addresses:
                 address.user = user
                 address.save()
-            return render(request, 'register.html.jinja', {'message': 'success'})
-        else:
-            return render(request, 'register.html.jinja', {'register_user_form': user_form, 'register_address_formset': address_formset})
+            return render(request,'register.html.jinja', {'message': "Success!"})
+        return render(request,'register.html.jinja', {'message': "Coś nie poszło!"})
     else:
-        user_form = forms.RegistrationForm()
-        address_formset = forms.UserAddressFormSet()
-        return render(request, 'register.html.jinja', {'register_user_form': user_form, 'register_address_formset': address_formset})
+        form_user = forms.RegistrationForm()
+        form_address = forms.UserAddressFormSet()
+        return render(request,'register.html.jinja', {'form_user': form_user, 'form_address': form_address})

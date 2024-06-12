@@ -1,25 +1,36 @@
-from django.shortcuts import render
+import pandas as pd
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
+from .models import Car, Order
+from .forms import OrderForm
 
 def index(request):
-    return render(request, 'index.html.jinja')
+    return render(request,'index.html.jinja')
 
 def cars(request):
     cars = Car.objects.all()
-    cars_table = pd.DataFrame.from_records(cars.values())
+    categories = list(cars.values_list('category', flat=True).distinct())
+    cars2 = pd.DataFrame.from_records(cars.values())
+    return render(request,'cars.html.jinja', {'cars': cars, 'categories': categories, 'cars2': cars2.to_html(classes='table table-striped table-bordereds', index=False, table_id="cars2")})
 
-    # Słownik mapujący kategorie na ich przyjazne użytkownikowi nazwy
-    category_dict = dict(Car.CATEGORIES)
+def car(request, car_id):
+    return render(request,'car.html.jinja')
 
-    # Tworzenie struktury danych dla szablonu
-    cars_by_category = {}
-    for car in cars:
-        category_name = category_dict[car.category]
-        if category_name not in cars_by_category:
-            cars_by_category[category_name] = []
-        cars_by_category[category_name].append(car)
+def rent(request, car_id):
+    if request.method == 'POST':
+        form_order = OrderForm(request.POST)
+        if form_order.is_valid():
+            order = form_order.save()
+            return redirect('confirm', order=order)
+        return render(request,'rent.html.jinja', {'message': "Coś nie poszło!"})
+    else:
+        car = Car.objects.get(id=car_id)
+        order = Order(
+            car=car, 
+            deposit=0.1*float(car.value),
+        )
+        form_order = OrderForm(instance=order)
+    return render(request,'rent.html.jinja', {'form_order': form_order, 'car_id': car_id})
 
-    return render(request, 'cars.html.jinja', {'cars_by_category': cars_by_category, 'cars_table': cars_table.to_html(classes='table table-striped table-bordereds', index=False, table_id='cars_table')}, )
-
-def index(request, car_id):
-    return render(request, 'car.html.jinja')
+def confirm(request, order):
+    return render(request,'confirm.html.jinja', {'order': order})
